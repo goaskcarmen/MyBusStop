@@ -1,0 +1,102 @@
+<!--<LinearLayout-->
+    <!--android:layout_width="wrap_content"-->
+    <!--android:layout_height="wrap_content"-->
+    <!--xmlns:android="http://schemas.android.com/apk/res/android"-->
+    <!--android:orientation="vertical" >-->
+
+    <!--<LinearLayout-->
+    <!--android:layout_width="wrap_content"-->
+    <!--android:layout_height="wrap_content">-->
+    <!--<EditText-->
+        <!--android:layout_width="300dp"-->
+        <!--android:layout_height="wrap_content"-->
+        <!--android:inputType="textPersonName"-->
+        <!--android:text="Please enter location"-->
+        <!--android:ems="10"-->
+        <!--android:id="@+id/TFaddress" />-->
+
+    <!--<Button-->
+        <!--android:text="Search"-->
+        <!--android:layout_width="wrap_content"-->
+        <!--android:layout_height="wrap_content"-->
+        <!--android:id="@+id/bsearch"-->
+        <!--android:onClick="onSearch" />-->
+
+    <!--</LinearLayout>-->
+
+    <!--<LinearLayout-->
+        <!--android:layout_width="wrap_content"-->
+        <!--android:layout_height="wrap_content">-->
+        <!--<Button-->
+            <!--android:text="Change View"-->
+            <!--android:layout_width="match_parent"-->
+            <!--android:layout_height="wrap_content"-->
+            <!--android:id="@+id/BType"-->
+            <!--android:onClick="changeType" />-->
+
+        <!--<Button-->
+            <!--android:text="Zoom in"-->
+            <!--android:layout_width="match_parent"-->
+            <!--android:layout_height="wrap_content"-->
+            <!--android:id="@+id/Bzoomin"-->
+            <!--android:onClick="onZoom" />-->
+
+        <!--<Button-->
+            <!--android:text="Zoom out"-->
+            <!--android:layout_width="match_parent"-->
+            <!--android:layout_height="wrap_content"-->
+            <!--android:id="@+id/Bzoomout"-->
+            <!--android:onClick="onZoom" />-->
+    <!--</LinearLayout>-->
+
+    <!--<LinearLayout-->
+        <!--android:layout_width="wrap_content"-->
+        <!--android:layout_height="wrap_content">-->
+        <!--<fragment  xmlns:android="http://schemas.android.com/apk/res/android"-->
+            <!--xmlns:tools="http://schemas.android.com/tools"-->
+            <!--android:id="@+id/mapFragment"-->
+            <!--android:name="com.google.android.gms.maps.SupportMapFragment"-->
+            <!--android:layout_width="382dp"-->
+            <!--android:layout_height="467dp" />-->
+    <!--</LinearLayout>-->
+
+<!--</LinearLayout>-->
+
+
+<!--<?xml version="1.0" encoding="utf-8"?>-->
+<android.support.design.widget.CoordinatorLayout
+xmlns:android="http://schemas.android.com/apk/res/android"
+xmlns:app="http://schemas.android.com/apk/res-auto"
+xmlns:tools="http://schemas.android.com/tools"
+android:layout_width="match_parent"
+android:layout_height="match_parent"
+android:fitsSystemWindows="true">
+
+<LinearLayout
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"></LinearLayout>
+
+    <android.support.design.widget.FloatingActionButton
+        android:id="@+id/fab"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|right"
+        android:src="@android:drawable/ic_menu_search"
+        app:layout_anchor="@+id/mapFragment"
+        app:layout_anchorGravity="bottom|left"
+        app:backgroundTint="@android:color/holo_blue_dark" />
+
+    <fragment
+        android:id="@+id/mapFragment"
+        class="com.google.android.gms.maps.SupportMapFragment"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"/>
+
+    <Button
+    android:text="Change View"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:id="@+id/BType"
+    android:onClick="changeType" />
+
+</android.support.design.widget.CoordinatorLayout>

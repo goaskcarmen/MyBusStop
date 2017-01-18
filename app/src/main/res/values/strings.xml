@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">My Bus Stop</string>
+    <string name="title_activity_my_bus_stop">Map</string>
+</resources>
