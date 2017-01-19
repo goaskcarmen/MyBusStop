@@ -3,7 +3,8 @@ package com.testing.mybusstop;
 import android.content.Intent;
 import android.content.IntentSender;
 import android.content.pm.PackageManager;
-import android.graphics.Camera;
+import android.graphics.BitmapFactory;
+import android.location.Geocoder;
 import android.location.Location;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -12,16 +13,7 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 
-import android.view.View;
-import android.location.Address;
-import android.os.AsyncTask;
-import android.location.Geocoder;
-import android.widget.Button;
-import android.widget.EditText;
-import android.widget.Toast;
-
 import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.common.GoogleApiAvailability;
 import com.google.android.gms.common.GooglePlayServicesNotAvailableException;
 import com.google.android.gms.common.GooglePlayServicesRepairableException;
 import com.google.android.gms.common.api.GoogleApiClient;
@@ -39,51 +31,52 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
-import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.MarkerOptions;
-import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
+import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.common.api.ResultCallback;
+
+
+import android.location.Address;
+import android.view.View;
 
 
 import java.io.IOException;
 import java.util.List;
 
 
-
-public class MyBusStop extends FragmentActivity implements OnMapReadyCallback, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, GoogleMap.OnMarkerClickListener, LocationListener {
+public class MyBusStop extends FragmentActivity implements OnMapReadyCallback,GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, GoogleMap.OnMarkerClickListener, LocationListener {
 
     private GoogleMap mMap;
-    private GoogleApiClient mGoogleApiClient;
 
+    private GoogleApiClient mGoogleApiClient;
     private static final int LOCATION_PERMISSION_REQUEST_CODE = 1;
     private Location mLastLocation;
 
+    // receiving loction updates
+    //Declare a LocationRequest member variable and a location updated state variable.
     private LocationRequest mLocationRequest;
     private boolean mLocationUpdateState;
-
+    // REQUEST_CHECK_SETTINGS is used as the request code passed to onActivityResult.
     private static final int REQUEST_CHECK_SETTINGS = 2;
 
+    // Place search
     private static final int PLACE_PICKER_REQUEST = 3;
 
-
-    public void onLocationChanged(Location l) {
-
-    }
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_my_bus_stop);
-//        setUpMapIfNeeded();
-
-//         Obtain the SupportMapFragment and get notified when the map is ready to be used.
+        // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.mapFragment);
         mapFragment.getMapAsync(this);
 
+// Instantiates the mGoogleApiClient field if it’s null.
         if (mGoogleApiClient == null) {
             mGoogleApiClient = new GoogleApiClient.Builder(this)
                     .addConnectionCallbacks(this)
@@ -92,11 +85,10 @@ public class MyBusStop extends FragmentActivity implements OnMapReadyCallback, G
                     .build();
         }
 
-        //update location
+        //location update
         createLocationRequest();
 
-
-        //search button
+        // place search
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -104,124 +96,44 @@ public class MyBusStop extends FragmentActivity implements OnMapReadyCallback, G
                 loadPlacePicker();
             }
         });
+
     }
+
+
+    @Override
+    public void onMapReady(GoogleMap googleMap) {
+        mMap = googleMap;
+
+        // Add a marker in Sydney and move the camera
+        LatLng seattle = new LatLng(47.607678, -122.334372);
+        mMap.addMarker(new MarkerOptions().position(seattle).title("Marker in Seattle"));
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(seattle, 12));
+
+        mMap.getUiSettings().setZoomControlsEnabled(true);
+        mMap.setOnMarkerClickListener(this);
+    }
+
 
     @Override
     protected void onStart() {
         super.onStart();
-        //
+        // Initiates a background connection of the client to Google Play services.
+
         mGoogleApiClient.connect();
     }
 
     @Override
     protected void onStop() {
         super.onStop();
-        // 3
-        if (mGoogleApiClient != null && mGoogleApiClient.isConnected()) {
+        // Closes the connection to Google Play services if the client is not null and is connected.
+
+        if( mGoogleApiClient != null && mGoogleApiClient.isConnected() ) {
             mGoogleApiClient.disconnect();
         }
     }
 
-
-
-    //if google services is available on the device, displayed this message
-//        if(googleServicesAvailable()){
-//            Toast.makeText(this, "play services is installed", Toast.LENGTH_LONG).show();
-//            setContentView(R.layout.activity_my_bus_stop);
-//
-//            // Obtain the SupportMapFragment and get notified when the map is ready to be used.
-//            SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
-//                    .findFragmentById(R.id.mapFragment);
-//            mapFragment.getMapAsync(this);
-//        }
-//        else{
-//            //No Google Maps Layout
-//        }
-
-
-    // check to see if google services is available on the device
-//    public boolean googleServicesAvailable()
-//    {
-//        GoogleApiAvailability api = GoogleApiAvailability.getInstance();
-//        int isAvailable = api.isGooglePlayServicesAvailable(this);
-//        if(isAvailable == ConnectionResult.SUCCESS)
-//        {
-//            return true;
-//        }
-//        else if (api.isUserResolvableError(isAvailable)){
-//            Dialog dialog = api.getErrorDialog(this, isAvailable, 0);
-    // look at google SDK
-//            dialog.show();
-//        }
-//        else{
-//            Toast.makeText(this, "Cannot connect to play services", Toast.LENGTH_LONG).show();
-//        }
-//        return false;
-//    }
-
-
-    // function for the search button
-//    public void onSearch(View view) {
-//        EditText location_tf = (EditText) findViewById(R.id.TFaddress);
-//        String location = location_tf.getText().toString();
-//        List<Address> addressList = null;
-//
-//        if (location != null || !location.equals("")) {
-//            Geocoder geocoder = new Geocoder(this);
-//
-//            try {
-//                addressList = geocoder.getFromLocationName(location, 1);
-//            } catch (IOException e) {
-//                e.printStackTrace();
-//            }
-//
-//            Address address = addressList.get(0); //store lat and long
-//            LatLng latLng = new LatLng(address.getLatitude(), address.getLongitude());
-//            mMap.addMarker(new MarkerOptions().position(latLng).title("Marker"));
-//            mMap.moveCamera(CameraUpdateFactory.newLatLng(latLng));
-//        }
-//
-//    }
-
-    //function for the change view (satellite vs. street view) button
-    public void changeType(View view) {
-        if (mMap.getMapType() == GoogleMap.MAP_TYPE_NORMAL) {
-            mMap.setMapType(GoogleMap.MAP_TYPE_SATELLITE);
-        } else {
-            mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
-        }
-    }
-
-    //function for zoom in and zoom out button
-    // zoom in and zoom out buttons are placed by mMap.getUiSettings().setZoomControlsEnabled(true);
-//    public void onZoom(View view) {
-//        if (view.getId() == R.id.Bzoomin) {
-//            mMap.animateCamera(CameraUpdateFactory.zoomIn());
-//        }
-//        if (view.getId() == R.id.Bzoomout) {
-//            mMap.animateCamera(CameraUpdateFactory.zoomOut());
-//
-//        }
-//    }
-
-
-//    private void setUpMapIfNeeded() {
-//        // Do a null check to confirm that we have not already instantiated the map.
-//        if (mMap == null) {
-//            // Try to obtain the map from the SupportMapFragment.
-//            mMap = ((SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.mapFragment))
-//              .getMap();
-//            // Check if we were successful in obtaining the map.
-//            if (mMap != null) {
-//                setUpMap();
-//
-//            }
-//        }
-//    }
-
-
+    //checks if the app has been granted the ACCESS_FINE_LOCATION permission. If it hasn’t, then request it from the user.
     private void setUpMap() {
-
         if (ActivityCompat.checkSelfPermission(this,
                 android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, new String[]
@@ -229,105 +141,93 @@ public class MyBusStop extends FragmentActivity implements OnMapReadyCallback, G
             return;
         }
 
+
+        ////////////////// GET CURRENT LOCATION //////////////////
+
+        // setMyLocationEnabled enables the my-location layer which draws a light blue dot on the user’s location. It also adds a button to the map that, when tapped, centers the map on the user’s location.
         mMap.setMyLocationEnabled(true);
 
+        // set up map type
+        // mMap.setMapType(GoogleMap.MAP_TYPE_TERRAIN);
+        // mMap.setMapType(GoogleMap.MAP_TYPE_SATELLITE);
+        // mMap.setMapType(GoogleMap.MAP_TYPE_HYBRID);
+        // mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
+
+
+
+        // getLocationAvailability determines the availability of location data on the device.
         LocationAvailability locationAvailability =
                 LocationServices.FusedLocationApi.getLocationAvailability(mGoogleApiClient);
         if (null != locationAvailability && locationAvailability.isLocationAvailable()) {
-
-            // place a loop here to obtain the mLastLocation every 30 seconds
+            // getLastLocation gives you the most recent location currently available
             mLastLocation = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
-
+            // If you were able to retrieve the the most recent location, then move the camera to the user’s current location.
             if (mLastLocation != null) {
                 LatLng currentLocation = new LatLng(mLastLocation.getLatitude(), mLastLocation
                         .getLongitude());
+
+                // MARKER
+                //add pin at user's location
                 placeMarkerOnMap(currentLocation);
+
                 mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLocation, 12));
             }
         }
 
     }
 
-    @Override
-    public void onMapReady(GoogleMap googleMap) {
-        mMap = googleMap;
 
-        // Add a marker in Sydney and move the camera
-        LatLng sydney = new LatLng(-34, 151);
-        mMap.addMarker(new MarkerOptions().position(sydney).title("Marker in Sydney"));
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(sydney, 12));
-
-        mMap.getUiSettings().setZoomControlsEnabled(true);
-        mMap.setOnMarkerClickListener(this);
-
-    }
-
+    ////////////////// MARKERS //////////////////
     protected void placeMarkerOnMap(LatLng location) {
+        // Create a MarkerOptions object and sets the user’s current location as the position for the marker
         MarkerOptions markerOptions = new MarkerOptions().position(location);
 
-        String titleStr = getAddress(location);  // add these two lines
+        // use custom icon
+//        markerOptions.icon(BitmapDescriptorFactory.fromBitmap(BitmapFactory.decodeResource
+//                (getResources(), R.mipmap.ic_user_location)));
+
+
+        // use different color for the default marker
+        markerOptions.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN));
+
+        // geocoder add address next to the marker as the title
+        String titleStr = getAddress(location);
         markerOptions.title(titleStr);
 
+        // Add the marker to the map
         mMap.addMarker(markerOptions);
     }
 
-    private String getAddress(LatLng latLng) {
-        //
-        Geocoder geocoder = new Geocoder(this);
+
+    ///////////////// GEOCODING ///////////////
+    private String getAddress( LatLng latLng ) {
+        // Creates a Geocoder object to turn a latitude and longitude coordinate into an address and vice versa.
+        Geocoder geocoder = new Geocoder( this );
         String addressText = "";
         List<Address> addresses = null;
         Address address = null;
         try {
-            //
-            addresses = geocoder.getFromLocation(latLng.latitude, latLng.longitude, 1);
-            //
+            // Asks the geocoder to get the address from the location passed to the method.
+            addresses = geocoder.getFromLocation( latLng.latitude, latLng.longitude, 1 );
+
+            // If the response contains any address, then append it to a string and return.
             if (null != addresses && !addresses.isEmpty()) {
                 address = addresses.get(0);
                 for (int i = 0; i < address.getMaxAddressLineIndex(); i++) {
-                    addressText += (i == 0) ? address.getAddressLine(i) : ("\n" + address.getAddressLine(i));
+                    addressText += (i == 0)?address.getAddressLine(i):("\n" + address.getAddressLine(i));
                 }
             }
+        } catch (IOException e ) {
         }
-        catch (IOException e) {        }
-
         return addressText;
     }
 
-    @Override
-    public void onConnected(@Nullable Bundle bundle) {
-        setUpMap();
 
-        //update location
-        if (mLocationUpdateState) {
-            startLocationUpdates();
-        }
-    }
-
-    @Override
-    public void onConnectionSuspended(int i) {
-
-    }
-
-    @Override
-    public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
-
-    }
-
-
-
-    @Override
-    public boolean onMarkerClick(Marker marker) {
-        return false;
-    }
-
-
-//////////////////////////////////////////////////////////////
-//////////////////  GET LOCATION UPDATES /////////////////////
-
+    //////////////// RECEIVING LOCATION UPDATES /////////////////
     protected void startLocationUpdates() {
-        //if the ACCESS_FINE_LOCATION permission has not been granted, request it now and return.
+        //In startLocationUpdates(), if the ACCESS_FINE_LOCATION permission has not been granted, request it now and return.
         if (ActivityCompat.checkSelfPermission(this,
-                android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED){
             ActivityCompat.requestPermissions(this,
                     new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION},
                     LOCATION_PERMISSION_REQUEST_CODE);
@@ -338,16 +238,13 @@ public class MyBusStop extends FragmentActivity implements OnMapReadyCallback, G
                 this);
     }
 
-    // create an instance of LocationRequest, add it to an instance of LocationSettingsRequest.Builder and
-    // retrieve and handle any changes to be made based on the current state of the user’s location settings.
+
+    // create an instance of LocationRequest, add it to an instance of LocationSettingsRequest.Builder and retrieve and handle any changes to be made based on the current state of the user’s location settings.
     protected void createLocationRequest() {
         mLocationRequest = new LocationRequest();
-
-        // setInterval() specifies the rate in millisecond at which the app to receive updates.
+        // setInterval() specifies the rate at which your app will like to receive updates.
         mLocationRequest.setInterval(10000);
-
-        // setFastestInterval() specifies the fastest rate at which the app can handle updates.
-        // Setting the fastestInterval rate places a limit on how fast updates will be sent to your app.
+        // setFastestInterval() specifies the fastest rate at which the app can handle updates. Setting the fastestInterval rate places a limit on how fast updates will be sent to your app.
         mLocationRequest.setFastestInterval(5000);
         mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
 
@@ -363,24 +260,20 @@ public class MyBusStop extends FragmentActivity implements OnMapReadyCallback, G
             public void onResult(@NonNull LocationSettingsResult result) {
                 final Status status = result.getStatus();
                 switch (status.getStatusCode()) {
-
                     // A SUCCESS status means all is well and you can go ahead and initiate a location request.
+
                     case LocationSettingsStatusCodes.SUCCESS:
                         mLocationUpdateState = true;
                         startLocationUpdates();
                         break;
-
-                    // A RESOLUTION_REQUIRED status means the location settings have some issues which can be fixed.
-                    // This could be as a result of the user’s location settings turned off
+                    // A RESOLUTION_REQUIRED status means the location settings have some issues which can be fixed. This could be as a result of the user’s location settings turned off.
                     case LocationSettingsStatusCodes.RESOLUTION_REQUIRED:
                         try {
                             status.startResolutionForResult(MyBusStop.this, REQUEST_CHECK_SETTINGS);
                         } catch (IntentSender.SendIntentException e) {
                         }
                         break;
-
-                    // A SETTINGS_CHANGE_UNAVAILABLE status means the location settings have some issues that you can’t fix.
-                    // This could be as a result of the user choosing NEVER on the dialog above.
+                    // A SETTINGS_CHANGE_UNAVAILABLE status means the location settings have some issues that you can’t fix. This could be as a result of the user choosing NEVER on the dialog above.
                     case LocationSettingsStatusCodes.SETTINGS_CHANGE_UNAVAILABLE:
                         break;
                 }
@@ -388,8 +281,8 @@ public class MyBusStop extends FragmentActivity implements OnMapReadyCallback, G
         });
     }
 
-    // Override FragmentActivity’s onActivityResult() method and start the update request
-    // if it has a RESULT_OK result for a REQUEST_CHECK_SETTINGS request.
+
+    // Override FragmentActivity’s onActivityResult() method and start the update request if it has a RESULT_OK result for a REQUEST_CHECK_SETTINGS request.
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
@@ -400,7 +293,7 @@ public class MyBusStop extends FragmentActivity implements OnMapReadyCallback, G
             }
         }
 
-        // Search
+        // place search
         if (requestCode == PLACE_PICKER_REQUEST) {
             if (resultCode == RESULT_OK) {
                 Place place = PlacePicker.getPlace(this, data);
@@ -428,9 +321,43 @@ public class MyBusStop extends FragmentActivity implements OnMapReadyCallback, G
         }
     }
 
-    //////////////////////////////////////////
-    ////////// SEARCH ///////////////////////
+    @Override
+    public void onConnected(@Nullable Bundle bundle) {
+        setUpMap();
 
+        //location update
+        if (mLocationUpdateState) {
+            startLocationUpdates();
+        }
+    }
+
+    @Override
+    public void onConnectionSuspended(int i) {
+
+    }
+
+    @Override
+    public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
+
+    }
+
+    @Override
+    public void onLocationChanged(Location location) {
+        //place marker on updated location
+//        mLastLocation = location;
+//        if (null != mLastLocation) {
+//            placeMarkerOnMap(new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude()));
+//        }
+
+    }
+
+    @Override
+    public boolean onMarkerClick(Marker marker) {
+        return false;
+    }
+
+
+    /////////////////// PLACE SEARCH ////////////
     private void loadPlacePicker() {
         PlacePicker.IntentBuilder builder = new PlacePicker.IntentBuilder();
 
@@ -441,10 +368,17 @@ public class MyBusStop extends FragmentActivity implements OnMapReadyCallback, G
         }
     }
 
+    /////////////// MAP TYPE /////////////////
+    //function for the change view (satellite vs. street view) button
+    public void changeType(View view) {
+        if (mMap.getMapType() == GoogleMap.MAP_TYPE_NORMAL) {
+            mMap.setMapType(GoogleMap.MAP_TYPE_SATELLITE);
+        } else {
+            mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
+        }
+    }
 
-    //////////////////////////////////////////////////
     ///////////// DISTANCE BETWEEN TWO POINTS////////////
-
     public double getDistance(LatLng LatLng1, LatLng LatLng2) {
         double distance = 0;
         Location locationA = new Location("A");
@@ -458,5 +392,3 @@ public class MyBusStop extends FragmentActivity implements OnMapReadyCallback, G
         return distance;
     }
 }
-
-
