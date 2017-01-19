@@ -11,6 +11,7 @@ android {
         versionName "1.0"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "googlemapsapikey", googlemapsapikey)
+        multiDexEnabled = true
     }
     buildTypes {
         release {

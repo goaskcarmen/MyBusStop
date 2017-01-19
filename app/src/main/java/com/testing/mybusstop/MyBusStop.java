@@ -63,7 +63,7 @@ public class MyBusStop extends FragmentActivity implements OnMapReadyCallback,Go
     private static final int REQUEST_CHECK_SETTINGS = 2;
 
     // Place search
-    private static final int PLACE_PICKER_REQUEST = 3;
+    private static final int PLACE_PICKER_REQUEST = 1;
 
 
 
@@ -296,7 +296,8 @@ public class MyBusStop extends FragmentActivity implements OnMapReadyCallback,Go
         // place search
         if (requestCode == PLACE_PICKER_REQUEST) {
             if (resultCode == RESULT_OK) {
-                Place place = PlacePicker.getPlace(this, data);
+                Place place = PlacePicker.getPlace(MyBusStop.this, data);
+
                 String addressText = place.getName().toString();
                 addressText += "\n" + place.getAddress().toString();
 
@@ -362,7 +363,8 @@ public class MyBusStop extends FragmentActivity implements OnMapReadyCallback,Go
         PlacePicker.IntentBuilder builder = new PlacePicker.IntentBuilder();
 
         try {
-            startActivityForResult(builder.build(MyBusStop.this), PLACE_PICKER_REQUEST);
+            Intent intent = builder.build(MyBusStop.this);
+            startActivityForResult(intent, PLACE_PICKER_REQUEST);
         } catch(GooglePlayServicesRepairableException | GooglePlayServicesNotAvailableException e) {
             e.printStackTrace();
         }
