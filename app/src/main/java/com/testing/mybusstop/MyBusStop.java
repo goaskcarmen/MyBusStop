@@ -1,5 +1,6 @@
 package com.testing.mybusstop;
 
+import android.content.Context;
 import android.content.Intent;
 import android.content.IntentSender;
 import android.content.pm.PackageManager;
@@ -393,6 +394,36 @@ public class MyBusStop extends FragmentActivity implements OnMapReadyCallback,Go
 
         return distance;
     }
+
+    ////////////// GET LATTITUDE AND LONGITUDE FROM AN ADDRESS ///////////
+    public LatLng getLocationFromAddress(Context context, String strAddress) {
+
+        Geocoder coder = new Geocoder(context);
+        List<Address> address;
+        LatLng p1 = null;
+
+        try {
+            address = coder.getFromLocationName(strAddress, 5);
+            if (address == null) {
+                return null;
+            }
+            Address location = address.get(0);
+            location.getLatitude();
+            location.getLongitude();
+
+            p1 = new LatLng(location.getLatitude(), location.getLongitude() );
+
+        } catch (Exception ex) {
+
+            ex.printStackTrace();
+        }
+
+        return p1;
+    }
+
+}
+
+
 }
 
 
