@@ -10,8 +10,11 @@ import android.content.Intent;
 import android.content.IntentSender;
 import android.content.pm.PackageManager;
 import android.graphics.BitmapFactory;
+import android.graphics.Color;
 import android.location.Geocoder;
 import android.location.Location;
+import android.media.RingtoneManager;
+import android.net.Uri;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
@@ -49,6 +52,7 @@ import android.location.Address;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.TaskStackBuilder;
 import android.view.View;
+import android.widget.Button;
 
 
 import java.io.IOException;
@@ -80,9 +84,11 @@ public class MyBusStop extends FragmentActivity implements OnMapReadyCallback,Go
 
     private Place destination;
 
+    // notification
     boolean isNotificActive = false; // track notification
-
     int notifiID = 33; //track with an id
+    NotificationManager notificationManager;
+    Button notificationOffButton;
 
 
 
@@ -115,6 +121,9 @@ public class MyBusStop extends FragmentActivity implements OnMapReadyCallback,Go
                 loadPlacePicker();
             }
         });
+
+        //notification Off button
+        notificationOffButton = (Button) findViewById(R.id.notificationOffButton);
 
     }
 
@@ -173,17 +182,6 @@ public class MyBusStop extends FragmentActivity implements OnMapReadyCallback,Go
         // mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
 
 
-//        Timer timer = new Timer();
-//
-//        timer.scheduleAtFixedRate(new TimerTask() {
-//
-//            synchronized public void run() {
-//
-//                updateLastLocation();
-//            }
-//
-//        }, 0, 5000);
-
         ScheduledExecutorService scheduler =
                 Executors.newSingleThreadScheduledExecutor();
 
@@ -225,7 +223,8 @@ public class MyBusStop extends FragmentActivity implements OnMapReadyCallback,Go
                     double distance = getDistance(currentLocation, destination.getLatLng());
                     System.out.println("distance: " + distance);
 
-                    if (distance <= 17000)
+                    // 1600 meter = ~ 1 mile
+                    if (distance <= 1600)
                     {
                         showNotification();
                     }
@@ -441,6 +440,7 @@ public class MyBusStop extends FragmentActivity implements OnMapReadyCallback,Go
     }
 
     ///////////// DISTANCE BETWEEN TWO POINTS////////////
+    //distance is in meters
     public double getDistance(LatLng LatLng1, LatLng LatLng2) {
         double distance = 0;
         Location locationA = new Location("A");
@@ -483,13 +483,21 @@ public class MyBusStop extends FragmentActivity implements OnMapReadyCallback,Go
 
 
     public void showNotification() {
+
+        Uri alarmUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
+
         //build notification
         NotificationCompat.Builder notificBuilder = new NotificationCompat.Builder(this)
                 .setContentTitle("Message")
                 .setContentText("Get Off Soon")
                 .setTicker("Alert New Message")
-                .setSmallIcon(R.drawable.ic_stat_name);
-//                .setVibrate(long[] pattern);
+                .setSmallIcon(R.drawable.ic_stat_name)
+                .setColor(0xFFE60045)
+                .setLights (Color.WHITE, 3000, 3000)
+                .setSound(alarmUri)
+                .setVibrate(new long[] { 1000, 1000, 1000, 1000, 1000 })
+                .setOngoing(true);
+
 
         // define the intention of opening more information notification in another page
         Intent moreInfoIntent = new Intent(this, MyBusStop.class);
@@ -510,12 +518,19 @@ public class MyBusStop extends FragmentActivity implements OnMapReadyCallback,Go
         notificBuilder.setContentIntent(pendingIntent);
 
         //notify of the background event
-        NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         notificationManager.notify(notifiID, notificBuilder.build());
 
         isNotificActive = true;
 
 
+    }
+
+    public void stopNotification(View view) {
+        if(isNotificActive)
+        {
+            notificationManager.cancel(notifiID);
+        }
     }
 }
 
