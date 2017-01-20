@@ -1,6 +1,11 @@
 package com.testing.mybusstop;
 
+import android.app.AlertDialog;
+import android.app.Dialog;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentSender;
 import android.content.pm.PackageManager;
@@ -41,11 +46,18 @@ import com.google.android.gms.common.api.ResultCallback;
 
 
 import android.location.Address;
+import android.support.v4.app.NotificationCompat;
+import android.support.v4.app.TaskStackBuilder;
 import android.view.View;
 
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 
 public class MyBusStop extends FragmentActivity implements OnMapReadyCallback,GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, GoogleMap.OnMarkerClickListener, LocationListener {
@@ -65,6 +77,12 @@ public class MyBusStop extends FragmentActivity implements OnMapReadyCallback,Go
 
     // Place search
     private static final int PLACE_PICKER_REQUEST = 1;
+
+    private Place destination;
+
+    boolean isNotificActive = false; // track notification
+
+    int notifiID = 33; //track with an id
 
 
 
@@ -155,6 +173,38 @@ public class MyBusStop extends FragmentActivity implements OnMapReadyCallback,Go
         // mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
 
 
+//        Timer timer = new Timer();
+//
+//        timer.scheduleAtFixedRate(new TimerTask() {
+//
+//            synchronized public void run() {
+//
+//                updateLastLocation();
+//            }
+//
+//        }, 0, 5000);
+
+        ScheduledExecutorService scheduler =
+                Executors.newSingleThreadScheduledExecutor();
+
+        scheduler.scheduleAtFixedRate
+                (new Runnable() {
+                    public void run() {
+                        updateLastLocation();
+                    }
+                }, 0, 5, TimeUnit.SECONDS);
+
+    }
+
+    private void updateLastLocation() {
+        System.out.println("UpdateLastLocation");
+
+        if (ActivityCompat.checkSelfPermission(this,
+                android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]
+                    {android.Manifest.permission.ACCESS_FINE_LOCATION}, LOCATION_PERMISSION_REQUEST_CODE);
+            return;
+        }
 
         // getLocationAvailability determines the availability of location data on the device.
         LocationAvailability locationAvailability =
@@ -162,19 +212,27 @@ public class MyBusStop extends FragmentActivity implements OnMapReadyCallback,Go
         if (null != locationAvailability && locationAvailability.isLocationAvailable()) {
             // getLastLocation gives you the most recent location currently available
             mLastLocation = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
+            System.out.println(String.format("lat: %s, lon: %s", mLastLocation.getLatitude(), mLastLocation.getLongitude()));
+
             // If you were able to retrieve the the most recent location, then move the camera to the user’s current location.
             if (mLastLocation != null) {
                 LatLng currentLocation = new LatLng(mLastLocation.getLatitude(), mLastLocation
                         .getLongitude());
 
-                // MARKER
-                //add pin at user's location
-                placeMarkerOnMap(currentLocation);
+                //mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLocation, 12));
 
-                mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLocation, 12));
+                if (destination != null) {
+                    double distance = getDistance(currentLocation, destination.getLatLng());
+                    System.out.println("distance: " + distance);
+
+                    if (distance <= 17000)
+                    {
+                        showNotification();
+                    }
+                }
+                System.out.println("finished UpdateLastLocation");
             }
         }
-
     }
 
 
@@ -243,18 +301,18 @@ public class MyBusStop extends FragmentActivity implements OnMapReadyCallback,Go
     // create an instance of LocationRequest, add it to an instance of LocationSettingsRequest.Builder and retrieve and handle any changes to be made based on the current state of the user’s location settings.
     protected void createLocationRequest() {
         mLocationRequest = new LocationRequest();
-        // setInterval() specifies the rate at which your app will like to receive updates.
+        // setInterval() specifies the rate at which your app will like to receive updates. Every 10 sec
         mLocationRequest.setInterval(10000);
         // setFastestInterval() specifies the fastest rate at which the app can handle updates. Setting the fastestInterval rate places a limit on how fast updates will be sent to your app.
         mLocationRequest.setFastestInterval(5000);
         mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
 
-        LocationSettingsRequest.Builder builder = new LocationSettingsRequest.Builder()
-                .addLocationRequest(mLocationRequest);
+        LocationSettingsRequest locationRequest = new LocationSettingsRequest.Builder()
+                .addLocationRequest(mLocationRequest).build();
 
         PendingResult<LocationSettingsResult> result =
                 LocationServices.SettingsApi.checkLocationSettings(mGoogleApiClient,
-                        builder.build());
+                        locationRequest);
 
         result.setResultCallback(new ResultCallback<LocationSettingsResult>() {
             @Override
@@ -299,9 +357,10 @@ public class MyBusStop extends FragmentActivity implements OnMapReadyCallback,Go
             if (resultCode == RESULT_OK) {
                 Place place = PlacePicker.getPlace(MyBusStop.this, data);
 
-                String addressText = place.getName().toString();
-                addressText += "\n" + place.getAddress().toString();
+//                String addressText = place.getName().toString();
+//                addressText += "\n" + place.getAddress().toString();
 
+                destination = place;
                 placeMarkerOnMap(place.getLatLng());
             }
         }
@@ -421,9 +480,46 @@ public class MyBusStop extends FragmentActivity implements OnMapReadyCallback,Go
         return p1;
     }
 
+
+
+    public void showNotification() {
+        //build notification
+        NotificationCompat.Builder notificBuilder = new NotificationCompat.Builder(this)
+                .setContentTitle("Message")
+                .setContentText("Get Off Soon")
+                .setTicker("Alert New Message")
+                .setSmallIcon(R.drawable.ic_stat_name);
+//                .setVibrate(long[] pattern);
+
+        // define the intention of opening more information notification in another page
+        Intent moreInfoIntent = new Intent(this, MyBusStop.class);
+
+        // when the user clicks on back it will go back to the proper place
+        TaskStackBuilder tStackBuilder = TaskStackBuilder.create(this);
+
+        tStackBuilder.addParentStack(MyBusStop.class);
+
+        tStackBuilder.addNextIntent(moreInfoIntent);
+
+        // define an intent and an action to perform with that intent by another application
+        PendingIntent pendingIntent = tStackBuilder.getPendingIntent(0, PendingIntent.FLAG_UPDATE_CURRENT); //if this intent exist just update it not create a new one
+
+        //in the taskbar the intent pops up with a little message
+        //if the taskbar is dragged and opened
+        //show intent when the notification is actually clicked on
+        notificBuilder.setContentIntent(pendingIntent);
+
+        //notify of the background event
+        NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        notificationManager.notify(notifiID, notificBuilder.build());
+
+        isNotificActive = true;
+
+
+    }
 }
 
 
-}
+
 
 
