@@ -94,9 +94,19 @@ android:fitsSystemWindows="true">
 
     <Button
     android:text="Change View"
-    android:layout_width="match_parent"
+    android:layout_width="wrap_content"
     android:layout_height="wrap_content"
     android:id="@+id/BType"
     android:onClick="changeType" />
+
+    <Button
+        android:text="Notification Off"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/notificationOffButton"
+        app:layout_anchor="@+id/mapFragment"
+        app:layout_anchorGravity="top|center_horizontal"
+        android:layout_gravity="bottom|center_horizontal"
+        android:onClick="stopNotification" />
 
 </android.support.design.widget.CoordinatorLayout>
